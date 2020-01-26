@@ -1,26 +1,28 @@
-#include <utils.h>
+
+#include <stdio.h>
+#include "utils.h"
 
 
-int main(){
+int main(int argc, char** argv){
     if (!init()){
         printf("could not initialize!\n");
     }
     else {
-
+        
         //events handler
         SDL_Event e;
 
         //main loop flag
         bool quit=false;
-
+        bool render=true;
         
         while (!quit){
 
             //render the menu to display
-            renderMenu(q->top);
+            if (render) renderMenu(q->top);
+            render=false;
 
-
-            //handel events based on the time of the menu
+            //handel events based on the type of the menu
             switch(q->top->type){
                 // the menus with only buttons 
                 case FIRST_FRAME:
@@ -33,22 +35,18 @@ int main(){
                         if (e.type==SDL_QUIT) {
                             quit=true;
                         }
-
                         if (e.type == SDL_MOUSEBUTTONDOWN){
                             //loop over all the buttons in the menu
                             for (int i=0 ; i< q->top->numberOfButtons ; i++){
                                 //if the mouse was inside the countainer of the button then activate it
                                 if (isMouseInsideContainer(q->top->buttons[i].container)){
+                                    render=true;
                                     handleClick(&(q->top->buttons[i]));
+                                    printf("click handled\n");
                                 }
                             }
                         }
-
                     }
-                    break;
-                }
-                case LOAD_GAME_MENU :{
-                    //TODO : edit how to load a game
                     break;
                 }
                 default :{ //Menus with input field
@@ -67,11 +65,13 @@ int main(){
                             if( e.key.keysym.sym == SDLK_BACKSPACE  )
                             {
                                 //lop off character
+                                render=true;
                                 textInput=deleteChar(textInput);
                             }
                             //Handle copy
                             else if( e.key.keysym.sym == SDLK_c && SDL_GetModState() & KMOD_CTRL )
                             {
+                                render=true;
                                 SDL_SetClipboardText( textInput );
                             }
                             //Handle paste
@@ -86,8 +86,9 @@ int main(){
                             //Not copy or pasting
                             if( !( SDL_GetModState() & KMOD_CTRL && ( e.text.text[ 0 ] == 'c' || e.text.text[ 0 ] == 'C' || e.text.text[ 0 ] == 'v' || e.text.text[ 0 ] == 'V' ) ) )
                             {
+                                render=true;
                                 //Append character
-                                addChar(textInput,e.text.text[0]);
+                                textInput=addChar(textInput,e.text.text[0]);
                             }
                         }
                         else if (e.type== SDL_MOUSEBUTTONDOWN){
@@ -95,6 +96,7 @@ int main(){
                             for (int i=0 ; i< q->top->numberOfButtons ; i++){
                                 //if the mouse was inside the countainer of the button then activate it
                                 if (isMouseInsideContainer(q->top->buttons[i].container)){
+                                    render=true;
                                     handleClick(&(q->top->buttons[i]));
                                 }
                             }
@@ -105,8 +107,7 @@ int main(){
             }
             //clear screen
             SDL_SetRenderDrawColor( renderer, 0xFF, 0xFF, 0xFF, 0xFF );
-			SDL_RenderClear( renderer );
-
+            
             SDL_RenderPresent( renderer );
         }
     }
