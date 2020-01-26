@@ -53,15 +53,17 @@ typedef struct{
 } API;
 
 typedef struct{
+    SDL_Texture* texture;
+    char* src;
+} Texture;
+
+typedef struct{
     SDL_Rect* container;
     Texture* texture;
     ButtonType t;
 } Button;
 
-typedef struct{
-    SDL_Texture* texture;
-    char* src;
-} Texture;
+
 
 
 typedef struct {
@@ -78,26 +80,28 @@ struct MenuStack{
     MenuStack* next;
 };
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+int SCREEN_WIDTH ;
+int SCREEN_HEIGHT ;
 
 
 
 //The window we'll be rendering to
-SDL_Window* window = NULL;
+SDL_Window* window;
 
 //The window renderer
-SDL_Renderer* renderer = NULL;
+SDL_Renderer* renderer ;
 
 //text input holder
 char* textInput;
 //Globally used font
-TTF_Font *font = NULL;
+TTF_Font *font ;
 SDL_Rect* default_container;
 
 
 //The game API
 API* api;
+
+
 
 //The Menu Queue
 MenuStack* q;
@@ -123,35 +127,16 @@ void renderMenu(Menu* menu);//done?
 
 
 //Menus Queue handling
-int isMenuStackEmpty(){ 
-    return q==NULL; 
-}
-void insert(Menu *menu){
-    MenuStack* newQ = malloc(sizeof(MenuStack));
-    newQ->top=menu;
-    newQ->next = q;
-    q=newQ;
-}
-void delete(){
-    if (q==NULL) return;
-    MenuStack* tmp = q;
-    destroyMenu(tmp->top);
-    tmp->top=NULL;
-    q=tmp->next;
-    free(tmp);
-    tmp=NULL;
-}
-void empty(){
-    if (q==NULL) return;
-    delete();
-    empty();
-}
+void insert(Menu *menu);
+void delete();
+void empty();
+
 //deallocate memory
 void freeAPI();//done
 void quit();
 
-SDL_Texture* loadTexture( char* path ,int size); //done
-Texture* LTextureText( char* textureText, SDL_Color textColor ); //done
-void loadFont(char* src);//done
+SDL_Texture* loadTexture( char* path ); //done
+SDL_Texture* LTextureText( char* textureText, SDL_Color textColor ); //done
+void loadFont(char* src,int size);//done
 char* deleteChar(char* str);
 char* addChar(char* str,char c);
