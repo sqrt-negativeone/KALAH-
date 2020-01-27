@@ -5,15 +5,15 @@
 typedef enum{false,true} bool;
 
 typedef enum{
-    FIRST_FRAME,
-    LOAD_GAME_MENU,
-    NEW_GAME_MENU,
-    CHOOSE_FIRST_PLAYER,
-    CHOOSE_SECOND_PLAYER,
-    CHOOSE_NUMBER_OF_PIECES,
-    HOME_MENU,
-    MAIN_GAME,
-    WINNER,
+    FIRST_FRAME=0,
+    LOAD_GAME_MENU=1,
+    NEW_GAME_MENU=2,
+    CHOOSE_FIRST_PLAYER=3,
+    CHOOSE_SECOND_PLAYER=4,
+    CHOOSE_NUMBER_OF_PIECES=5,
+    HOME_MENU=6,
+    MAIN_GAME=7,
+    WINNER=8,
 } MenuType;
 
 
@@ -55,6 +55,7 @@ typedef struct{
 typedef struct{
     SDL_Texture* texture;
     char* src;
+    int w,h;
 } Texture;
 
 typedef struct{
@@ -103,7 +104,7 @@ API* api;
 
 
 
-//The Menu Queue
+//The Menu stack
 MenuStack* q;
 
 //initializing game
@@ -136,7 +137,8 @@ void freeAPI();//done
 void quit();
 
 SDL_Texture* loadTexture( char* path ); //done
-SDL_Texture* LTextureText( char* textureText, SDL_Color textColor ); //done
+Texture* LTextureText( char* textureText, SDL_Color textColor ); //done
 void loadFont(char* src,int size);//done
 char* deleteChar(char* str);
 char* addChar(char* str,char c);
+
