@@ -17,11 +17,10 @@ int main(int argc, char** argv){
         bool render=true;
         
         while (!quit){
-
+            
             //render the menu to display
-            if (render) renderMenu(q->top);
-            render=false;
-
+            //SDL_RenderClear(renderer);
+            if (render) renderMenu(q->top); render=false;
             //handel events based on the type of the menu
             switch(q->top->type){
                 // the menus with only buttons 
@@ -41,8 +40,9 @@ int main(int argc, char** argv){
                                 //if the mouse was inside the countainer of the button then activate it
                                 if (isMouseInsideContainer(q->top->buttons[i].container)){
                                     render=true;
+                                    printf("%d\n",q->next==NULL);
                                     handleClick(&(q->top->buttons[i]));
-                                    printf("click handled\n");
+                                    break;
                                 }
                             }
                         }
@@ -71,12 +71,12 @@ int main(int argc, char** argv){
                             //Handle copy
                             else if( e.key.keysym.sym == SDLK_c && SDL_GetModState() & KMOD_CTRL )
                             {
-                                render=true;
                                 SDL_SetClipboardText( textInput );
                             }
                             //Handle paste
                             else if( e.key.keysym.sym == SDLK_v && SDL_GetModState() & KMOD_CTRL )
                             {
+                                render=true;
                                 textInput = SDL_GetClipboardText();
                             }
                         }
@@ -98,6 +98,7 @@ int main(int argc, char** argv){
                                 if (isMouseInsideContainer(q->top->buttons[i].container)){
                                     render=true;
                                     handleClick(&(q->top->buttons[i]));
+                                    break;
                                 }
                             }
                         }
