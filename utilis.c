@@ -638,7 +638,7 @@ void renderMenu(Menu* menu){
                 DIR *d;
                 struct dirent *dir;
                 cont.x=3*SCREEN_WIDTH/8;
-                cont.y=15*SCREEN_HEIGHT/32;
+                cont.y=33*SCREEN_HEIGHT/64;
                 d = opendir(".\\saves");
                 if (d){
                     while ((dir = readdir(d)) != NULL)
