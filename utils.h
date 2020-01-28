@@ -14,6 +14,7 @@ typedef enum{
     HOME_MENU=6,
     MAIN_GAME=7,
     WINNER=8,
+    LOADING
 } MenuType;
 
 
@@ -101,8 +102,9 @@ SDL_Rect* default_container;
 
 //The game API
 API* api;
-
-
+API* tmpAPI;
+// rander flag
+bool render;
 
 //The Menu stack
 MenuStack* q;
@@ -136,9 +138,17 @@ void empty();
 void freeAPI();//done
 void quit();
 
+
+//Texture utilities
 SDL_Texture* loadTexture( char* path ); //done
 Texture* LTextureText( char* textureText, SDL_Color textColor ); //done
 void loadFont(char* src,int size);//done
+void destroyTexture(Texture* texture);
+//input text manupulations
 char* deleteChar(char* str);
 char* addChar(char* str,char c);
+
+//rendering pile and kalah pieces
+void renderPieces(SDL_Rect* container,int nombrePieces);
+
 
