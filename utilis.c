@@ -3,43 +3,47 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <dirent.h>
 #define KALAH 6
 
-
 //------------------------------------------play-------------------------------------------------
-stack* newGame(){
-    
-    stack* game = (stack*) malloc(sizeof (stack));
-    state* s = (state*) malloc (sizeof(state));
-    game->numb_games=api->game->numb_games+1;
-    s->player_turn=api->game->s->player_turn;
-    game->s= s;
-    game->player[0]=(Player*) malloc (sizeof(Player));
-    game->player[1]=(Player*) malloc (sizeof(Player));
-    strcpy(game->player[0]->name,api->game->player[0]->name);
-    strcpy(game->player[1]->name,api->game->player[1]->name);
-    for (int i=0 ; i<7 ;i++){
-        game->player[0]->board[i]= api->game->player[0]->board[i];
-        game->player[1]->board[i]= api->game->player[1]->board[i];
-    }
-    return game;
-}
-
 
 void play(int move){
     saveAPI();
-
-    stack* game = newGame(api);
     
-    int player = game->s->player_turn;
+    int player = api->game->s->player_turn;
+    if (api->game->player[player]->board[move]==0) return;
 
-    int pieces = game->player[player]->board[move];
-    game->player[player]->board[move]=0;
+    //saveAPI();
+
+    stack* holder=api->game;
+    api->game=malloc(sizeof(stack));
+
+    api->game->prec=holder;
+    api->game->numb_games=api->game->prec->numb_games+1;
+    api->game->player[0]=malloc(sizeof(Player));
+    api->game->player[1]=malloc(sizeof(Player));
+
+    strcpy(api->game->player[0]->name,api->game->prec->player[0]->name);
+    strcpy(api->game->player[1]->name,api->game->prec->player[1]->name);
+    
+    api->game->s=malloc(sizeof(state));
+
+    api->game->s->is_all_empty=api->game->s->is_last_move_at_empty=api->game->s->is_last_move_at_kalah=0;
+    api->game->s->player_turn=api->game->prec->s->player_turn;
+
+    for (int i=0 ; i<7 ;i++){
+        api->game->player[0]->board[i]= api->game->prec->player[0]->board[i];
+        api->game->player[1]->board[i]= api->game->prec->player[1]->board[i];
+    }
+
+    int pieces = api->game->player[player]->board[move];
+    api->game->player[player]->board[move]=0;
+    
     int currPlayer=player;
     while (pieces--){
     ignore :
         move++;
-        
         if (move==7){
             move=0;
             currPlayer=1-currPlayer;
@@ -47,34 +51,36 @@ void play(int move){
         if (move==KALAH && currPlayer!=player) {
             goto ignore;
         }
-        game->player[currPlayer]->board[move] ++;
+        api->game->player[currPlayer]->board[move]++;
     }
-
-    if (move == KALAH) game->s->is_last_move_at_kalah=1;
-    if (currPlayer==player && game->player[player]->board[move]==1 && move != KALAH) game->s->is_last_move_at_empty=1;
+    
+    if (move == KALAH) api->game->s->is_last_move_at_kalah=1;
+    
+    if (currPlayer==player && api->game->player[player]->board[move]==1 && move != KALAH) api->game->s->is_last_move_at_empty=1;
+    
     int is_all_empty=1;
     
-    if (game->s->is_last_move_at_kalah){
-        game->s->player_turn=player;
+    if (api->game->s->is_last_move_at_kalah){
+        api->game->s->player_turn=player;
     }
     else {
-        game->s->player_turn=1-player;
+        api->game->s->player_turn=1-player;
+    }
+    if (api->game->s->is_last_move_at_empty){
+        api->game->player[player]->board[KALAH]+= 1 + api->game->player[1-player]->board[5-move];
+        api->game->player[player]->board[move]=0;
+        api->game->player[1-player]->board[5-move]=0;
     }
 
-    if (game->s->is_last_move_at_empty){
-        game->player[player]->board[KALAH]+= 1 + game->player[1-player]->board[5-move];
-        game->player[player]->board[move]=0;
-        game->player[1-player]->board[5-move]=0;
-    }
     for (int i=0 ; i<6 && is_all_empty ; i++){
-        if (game->player[game->s->player_turn]->board[i]!=0) is_all_empty=0;
+        if (api->game->player[api->game->s->player_turn]->board[i]!=0) is_all_empty=0;
     }
-    game->s->is_all_empty= is_all_empty;
-    game->prec=api->game;
-    api->game =game;
+    api->game->s->is_all_empty= is_all_empty;
 }
 
 //-----------------------------------------------------------------------------------------------
+
+
 
 //-------------------------------------------------save------------------------------------------
 void savePlayer(Player* p , FILE* file){
@@ -93,7 +99,6 @@ void saveAPI(){
 
     char dir[]="saves\\";
     strcat(dir,api->name);
-    strcat(dir,".bin");
     
     FILE* file= fopen(dir,"wb");
 
@@ -101,7 +106,7 @@ void saveAPI(){
         system("mkdir saves");
         file = fopen(dir,"wb");
         if (file == NULL) {
-            printf("couldn't save\n");
+            printf("Couldn't save\n");
             return;
         }
     }
@@ -121,6 +126,7 @@ void saveAPI(){
     fclose(file);
 }
 //-----------------------------------------------------------------------------------------------
+
 //----------------------------------------------load---------------------------------------------
 Player* loadPlayer(FILE* file){
     Player* p = (Player*) malloc(sizeof(Player));
@@ -141,15 +147,13 @@ state* loadState(FILE* file){
 
 void loadAPI(char* name){
 
-    printf("loading game... \n");
+    printf("Loading game... \n");
     char dir[] = "saves\\";
     strcat(dir,name);
-    strcat(dir,".bin");
 
     FILE* file = fopen(dir, "rb");
-
     if(file == NULL){
-        printf("file not found..\n");
+        printf("File not found..\n");
         return ;
     }
     api = (API*) malloc (sizeof(api));
@@ -208,25 +212,35 @@ void handleClick(Button* button){
             break;
         }
         case UNDO :{
-            if (api->game->prec!=NULL) api->game=api->game->prec;
+            if (api->game->prec!=NULL){
+                api->game=api->game->prec;
+            } 
+            else {
+                render=false;
+                return;
+            }
             break;
         }
         case PILE: {
             int x;
             x= button->container->x;
             int p = button->container->y < SCREEN_HEIGHT/2;
-            if (p!=api->game->s->player_turn) break;
+            if (p != api->game->s->player_turn) {
+                render=false;
+                return;
+            }
             int move = 10*x/SCREEN_WIDTH;
             move-=2;
-
+            if (p==1) move=5-move;
             play(move);
-            break;
+            
+            return;
         }
         case NUMBER_OF_PIECES:{
             int x = button->container->x;
             int pieces= 5*x/SCREEN_WIDTH;
             pieces+=3;
-            api->numb_pieces = pieces*12;
+            tmpAPI->numb_pieces = pieces*12;
             Menu* menu = createMenu (CHOOSE_FIRST_PLAYER);
             insert(menu);
             break;
@@ -234,32 +248,30 @@ void handleClick(Button* button){
         case NEXT:{
             switch (q->top->type){
                 case NEW_GAME_MENU :  {
-                    printf("hi\n");
                     if (textInput=="") break;
-                    if (api==NULL){
-                        printf(".\n");
-                        api=malloc (sizeof(API));
-                        api->game=malloc(sizeof(stack));
-                        api->game->s=malloc(sizeof(state));
-                        api->game->prec=NULL;
-                        api->game->player[0]=malloc(sizeof(Player));
-                        api->game->player[1]=malloc(sizeof(Player));
+                    if (tmpAPI==NULL){
+                        tmpAPI=malloc (sizeof(API));
+                        tmpAPI->game=malloc(sizeof(stack));
+                        tmpAPI->game->numb_games=1;
+                        tmpAPI->game->s=malloc(sizeof(state));
+                        tmpAPI->game->prec=NULL;
+                        tmpAPI->game->player[0]=malloc(sizeof(Player));
+                        tmpAPI->game->player[1]=malloc(sizeof(Player));
                     } 
                     srand(time(NULL));
-                    api->game->s->player_turn = rand()%2; // chose a random player to start the game
-                    api->game->s->is_all_empty=api->game->s->is_last_move_at_empty=api->game->s->is_last_move_at_kalah=0;
-                    strcpy(api->name,textInput);
+                    tmpAPI->game->s->player_turn = rand()%2; // chose a random player to start the game
+                    tmpAPI->game->s->is_all_empty=tmpAPI->game->s->is_last_move_at_empty=tmpAPI->game->s->is_last_move_at_kalah=0;
+                    strcpy(tmpAPI->name,textInput);
                     textInput="";
                     Menu* menu = createMenu(CHOOSE_NUMBER_OF_PIECES);
                     insert(menu);
-                    printf("menu created\n");
                     break;
                 }
                 case CHOOSE_FIRST_PLAYER : {
                     if (textInput=="") break;
-                    strcpy(api->game->player[0]->name,textInput);
-                    for (int i=0; i<KALAH;i++) api->game->player[0]->board[i]=api->numb_pieces/12;
-                    api->game->player[0]->board[KALAH]=0;
+                    strcpy(tmpAPI->game->player[0]->name,textInput);
+                    for (int i=0; i<KALAH;i++) tmpAPI->game->player[0]->board[i]=tmpAPI->numb_pieces/12;
+                    tmpAPI->game->player[0]->board[KALAH]=0;
                     textInput="";
                     Menu* menu = createMenu(CHOOSE_SECOND_PLAYER);
                     insert(menu);
@@ -267,11 +279,23 @@ void handleClick(Button* button){
                 }
                 case CHOOSE_SECOND_PLAYER :{
                     if (textInput=="") break;
-                    strcpy(api->game->player[1]->name,textInput);
-                    for (int i=0; i<KALAH;i++) api->game->player[1]->board[i]=api->numb_pieces/12;
-                    api->game->player[1]->board[KALAH]=0;
+                    strcpy(tmpAPI->game->player[1]->name,textInput);
+                    for (int i=0; i<KALAH;i++) tmpAPI->game->player[1]->board[i]=tmpAPI->numb_pieces/12;
+                    tmpAPI->game->player[1]->board[KALAH]=0;
+                    textInput="";
+                    freeAPI(api);
+                    api=tmpAPI;
+                    tmpAPI=NULL;
+                    Menu* menu = createMenu(LOADING);
+                    insert(menu);
+                    break;
+                }
+                case LOAD_GAME_MENU:{
+                    freeAPI(api);
+                    loadAPI(textInput);
                     textInput="";
                     Menu* menu = createMenu(MAIN_GAME);
+                    empty();
                     insert(menu);
                     break;
                 }
@@ -284,6 +308,8 @@ void handleClick(Button* button){
     }
 }
 //-----------------------------------------------------------------------------------------------
+
+
 //---------------------------------------handleing Menus-----------------------------------------
 
 Menu* createMenu(MenuType type){
@@ -309,6 +335,7 @@ Menu* createMenu(MenuType type){
             button->texture=malloc(sizeof(Texture));
 
             button->texture->src="images/homescreen/play.png";
+            
             button->texture->texture=loadTexture(button->texture->src);
 
             menu->numberOfButtons=1;
@@ -321,22 +348,33 @@ Menu* createMenu(MenuType type){
             background->texture=loadTexture(background->src);
             menu->background=background;
             
-            Button* button = malloc(sizeof(Button));
+            Button* buttons = malloc(2*sizeof(Button));
 
-            button->t = PREVIOUS; // the button type
+            buttons[0].container = malloc (sizeof (SDL_Rect));
+            buttons[0].texture = malloc(sizeof (Texture));
+            buttons[0].t=PREVIOUS;
 
-            button->container=malloc(sizeof(SDL_Rect));
-            button->container->x=0;
-            button->container->y=2*SCREEN_HEIGHT/3;
-            button->container->h=SCREEN_HEIGHT/3;
-            button->container->w=SCREEN_WIDTH/8;
+            buttons[0].container->x=0;
+            buttons[0].container->y=2*SCREEN_HEIGHT/3;
+            buttons[0].container->h=SCREEN_HEIGHT/3;
+            buttons[0].container->w=SCREEN_WIDTH/4;
+
+            buttons[0].texture->src="images/play/undo.png";
+            buttons[0].texture->texture=loadTexture("images/play/undo.png");
+
+            buttons[1].t = NEXT; // the button type
+            buttons[1].container=malloc(sizeof(SDL_Rect));
+            buttons[1].texture=malloc (sizeof(Texture));
+
+            buttons[1].container->x=3*SCREEN_WIDTH/4;
+            buttons[1].container->y=2*SCREEN_HEIGHT/3;
+            buttons[1].container->h=SCREEN_HEIGHT/3;
+            buttons[1].container->w=SCREEN_WIDTH/4;
             
-            button->texture=malloc (sizeof(Texture));
-            button->texture->src="images/play/undo.png";
-            button->texture->texture=loadTexture(button->texture->src);
-            
-            menu->numberOfButtons=1;
-            menu->buttons=button;
+            buttons[1].texture->src="images/newgame/next.png";
+            buttons[1].texture->texture=loadTexture(buttons[1].texture->src);
+            menu->numberOfButtons=2;
+            menu->buttons=buttons;
             break;
         }
         case NEW_GAME_MENU :{
@@ -351,9 +389,6 @@ Menu* createMenu(MenuType type){
                 background->texture=loadTexture(background->src);
                 menu->background=background;
             }
-            
-
-            
         }
         case CHOOSE_SECOND_PLAYER : {
             if (type==CHOOSE_SECOND_PLAYER){
@@ -451,6 +486,7 @@ Menu* createMenu(MenuType type){
             buttons[0].container->w=2*SCREEN_WIDTH/5;
             
             buttons[0].texture->src= "images/homescreen/newgame.png";
+            
             buttons[0].texture->texture=loadTexture(buttons[0].texture->src);
 
             buttons[1].container = malloc (sizeof (SDL_Rect));
@@ -540,24 +576,29 @@ Menu* createMenu(MenuType type){
             background->texture=loadTexture(background->src);
             menu->background=background;
             menu->numberOfButtons=1;
-            Button* button = malloc (sizeof(Button));
+            Button* buttons = malloc (sizeof(Button));
 
-            button->t = HOME; // the button type
+            buttons[0].t = HOME;
+            buttons[0].container = malloc (sizeof (SDL_Rect));
+            
+            buttons[0].container->x=35*SCREEN_WIDTH/40;
+            buttons[0].container->y=SCREEN_HEIGHT/24;
+            buttons[0].container->h=3*SCREEN_HEIGHT/24;
+            buttons[0].container->w=3*SCREEN_WIDTH/24;
+            
+            buttons[0].texture = malloc(sizeof (Texture));
+            buttons[0].texture->src="images/play/homebutton.png";
+            buttons[0].texture->texture=loadTexture(buttons[0].texture->src);
 
-            SDL_Rect* container = malloc (sizeof (SDL_Rect)); //the button container
-            container->x=37*SCREEN_WIDTH/40;
-            container->y=SCREEN_HEIGHT/12;
-            container->h=SCREEN_HEIGHT/12;
-            container->w=SCREEN_WIDTH/20;
-            button->container=container;
-
-            Texture* texture = malloc(sizeof(Texture)); // the button texture
-
-            texture->src="images/play/homebutton.png";
-            texture->texture=loadTexture(texture->src);
-
-            button->texture=texture;
-            menu->buttons=button;
+            menu->buttons=buttons;
+            break;
+        }
+        case LOADING:{
+            background->src="images/loading.jpg";
+            background->texture=loadTexture(background->src);
+            menu->background=background;
+            menu->numberOfButtons=0;
+            menu->buttons=NULL;
         }
     }
     return menu;
@@ -577,32 +618,68 @@ void renderMenu(Menu* menu){
     switch (menu->type){
         case CHOOSE_FIRST_PLAYER:
         case CHOOSE_SECOND_PLAYER:
+        case LOAD_GAME_MENU:
         case NEW_GAME_MENU:{
+            SDL_Rect cont;
+            Texture* texture ;
+            SDL_Color textColor = {0,0,0};
+            if (menu->type==LOAD_GAME_MENU){
+                texture=malloc(sizeof(Texture));
+                cont.x=SCREEN_WIDTH/8;
+                cont.y=SCREEN_HEIGHT/4;
+                cont.w=3*SCREEN_WIDTH/4;
+                cont.h=SCREEN_HEIGHT/5;
+                texture->src="images/loadgame/bar.png";
+                texture->texture=loadTexture(texture->src);
+                SDL_RenderSetViewport(renderer,&cont);
+                SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
+                SDL_DestroyTexture(texture->texture);
+                loadFont("fonts/arialbd.ttf",18);
+                DIR *d;
+                struct dirent *dir;
+                cont.x=3*SCREEN_WIDTH/8;
+                cont.y=15*SCREEN_HEIGHT/32;
+                d = opendir(".\\saves");
+                if (d){
+                    while ((dir = readdir(d)) != NULL)
+                    {
+                        
+                        if (dir->d_type == DT_REG) {
+                            texture=LTextureText(dir->d_name,textColor);
+                            cont.h=texture->h;
+                            cont.w=texture->w;
+                            SDL_RenderSetViewport(renderer,&cont);
+                            SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
+                            SDL_DestroyTexture(texture->texture);
+                            cont.y+=cont.h;
+                        }
+                    }
+                    closedir(d);
+                }
+                
+            }
+            if (strlen(textInput)==0) break;
             loadFont("fonts/goudysto.ttf",20);
+            if (menu->type==LOAD_GAME_MENU) cont.y=5*SCREEN_HEIGHT/16;
+            else cont.y=SCREEN_HEIGHT/2;
+            cont.x=SCREEN_WIDTH/3;
+            texture=LTextureText(textInput,textColor);
+            
+            cont.h=texture->h;
+            cont.w=texture->w;
+            SDL_RenderSetViewport(renderer,&cont);
+            SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
+            SDL_DestroyTexture(texture->texture);
+            free(texture);
+            break;
+        }
+        case WINNER :{
+            loadFont("fonts/blowbrush.ttf",70);
             SDL_Rect cont;
             Texture* texture = malloc (sizeof(Texture));
             SDL_Color textColor = {0,0,0};
             cont.x=SCREEN_WIDTH/3;
             cont.y=SCREEN_HEIGHT/2;
-            
-            texture->src=textInput;
-            if (textInput!="") texture=LTextureText(texture->src,textColor);
-            else {
-                texture=LTextureText(" ",textColor);
-            }
-            cont.h=texture->h;
-            cont.w=texture->w;
-            SDL_RenderSetViewport(renderer,&cont);
-            SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
-            break;
-        }
-        case WINNER :{
-            loadFont("fonts/blowbrush.ttf",48);
-            SDL_Rect cont;
-            Texture* texture = malloc (sizeof(Texture));
-            SDL_Color textColor = {0,0,0};
-            cont.x=SCREEN_WIDTH/10;
-            cont.y=SCREEN_HEIGHT/4;
             
             for (int i=0; i<KALAH; i++){
                 api->game->player[0]->board[KALAH]+=api->game->player[0]->board[i];
@@ -610,16 +687,21 @@ void renderMenu(Menu* menu){
                 api->game->player[1]->board[KALAH]+=api->game->player[1]->board[i];
                 api->game->player[1]->board[i]=0;
             }
+            
             if (api->game->player[0]->board[KALAH]> api->game->player[1]->board[KALAH]) {
                 texture=LTextureText(api->game->player[0]->name,textColor);
             }
             else {
                 texture=LTextureText(api->game->player[1]->name,textColor);
             }
+            
             cont.h=texture->h;
             cont.w=texture->w;
+
             SDL_RenderSetViewport(renderer,&cont);
             SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
+
+            destroyTexture(texture);
             break;
         }
         case MAIN_GAME :{
@@ -627,6 +709,7 @@ void renderMenu(Menu* menu){
                 SDL_RenderSetViewport(renderer,menu->buttons[i].container);
                 SDL_RenderCopy(renderer,menu->buttons[i].texture->texture,NULL,NULL);
             }
+
             //render the board
             SDL_Rect cont;
             cont.x=3*SCREEN_WIDTH/40;
@@ -638,6 +721,7 @@ void renderMenu(Menu* menu){
             texture->src="images/play/board.png";
             texture->texture=loadTexture(texture->src);
             SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
+            SDL_DestroyTexture(texture->texture);
 
             //render left and right kalah
             cont.x=3*SCREEN_WIDTH/128;
@@ -649,17 +733,36 @@ void renderMenu(Menu* menu){
             texture->texture=loadTexture(texture->src);
             SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
             
+            SDL_DestroyTexture(texture->texture);
+
             cont.x=58*SCREEN_WIDTH/80;
             SDL_RenderSetViewport(renderer,&cont);
             
             texture->src="images/play/rightkalah.png";
             texture->texture=loadTexture(texture->src);
             SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
+            SDL_DestroyTexture(texture->texture);
             
+            cont.x=10*SCREEN_WIDTH/128;
+            cont.y=SCREEN_HEIGHT/3;
+            cont.h=SCREEN_HEIGHT/3;
+            cont.w=3*SCREEN_WIDTH/20;
+            int player1KALAH=api->game->player[1]->board[KALAH];
+            renderPieces(&cont,player1KALAH);
+
+            cont.x=62*SCREEN_WIDTH/80;
+            int player2KALAH=api->game->player[0]->board[KALAH];
+            renderPieces(&cont,player2KALAH);
             
             for (int i=2 ;i<menu->numberOfButtons; i++){
+                //rendering piles
                 SDL_RenderSetViewport(renderer,menu->buttons[i].container);
                 SDL_RenderCopy(renderer,menu->buttons[i].texture->texture,NULL,NULL);
+                //rendering pieces
+                int nombrePieces;
+                if (i<8) nombrePieces=api->game->player[1]->board[5-(i-2)];
+                else  nombrePieces = api->game->player[0]->board[i-8];
+                renderPieces(menu->buttons[i].container,nombrePieces);
             }
 
             //render the texts
@@ -672,8 +775,15 @@ void renderMenu(Menu* menu){
             cont.y=SCREEN_HEIGHT/12;
             cont.h=SCREEN_HEIGHT/12;
             cont.w=3*SCREEN_WIDTH/10;
+            if (api->game->s->player_turn==1) textColor.r=0xff;
 
-            texture=LTextureText(api->game->player[1]->name,textColor);
+            destroyTexture(texture);
+            char* txt;
+            char holder[20];
+            txt=strcpy(holder,api->game->player[1]->name);
+            texture=LTextureText(txt,textColor);
+
+            textColor.r=0;
             cont.h=texture->h;
             cont.w=texture->w;
             SDL_RenderSetViewport(renderer,&cont);
@@ -682,12 +792,18 @@ void renderMenu(Menu* menu){
             cont.x=7*SCREEN_WIDTH/10;
             cont.y=5*SCREEN_HEIGHT/6;
 
-            texture=LTextureText(api->game->player[0]->name,textColor);
+            if (api->game->s->player_turn==0) textColor.r=0xff;
+
+            destroyTexture(texture);
+            txt=strcpy(holder,api->game->player[0]->name);
+            texture=LTextureText(txt,textColor);
+
+            textColor.r=0;
             cont.h=texture->h;
             cont.w=texture->w;
             SDL_RenderSetViewport(renderer,&cont);
             SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
-
+            
             loadFont("fonts/goudysto.ttf",24);
             cont.h=SCREEN_HEIGHT/15;
             cont.w=SCREEN_WIDTH/10;
@@ -696,8 +812,9 @@ void renderMenu(Menu* menu){
                 cont.x=(i+2)*SCREEN_WIDTH/10+15;
                 cont.y=13*SCREEN_HEIGHT/64;
 
-                itoa(api->game->player[0]->board[5-i],texture->src,10);
-                texture=LTextureText(texture->src,textColor);
+                char* buffer=itoa(api->game->player[1]->board[5-i],holder,10);
+                destroyTexture(texture); texture=NULL;
+                texture=LTextureText(buffer,textColor);
                 cont.h=texture->h;
                 cont.w=texture->w;
                 SDL_RenderSetViewport(renderer,&cont);
@@ -706,8 +823,10 @@ void renderMenu(Menu* menu){
             for (int i=0 ; i<6; i++){
                 cont.x= (i+2)*SCREEN_WIDTH/10+15;
                 cont.y=(64-18)*SCREEN_HEIGHT/64;
-                itoa(api->game->player[0]->board[i],texture->src,10);
-                texture=LTextureText(texture->src,textColor);
+                char holder[3];
+                char* buffer=itoa(api->game->player[0]->board[i],holder,10);
+                destroyTexture(texture); texture=NULL;
+                texture=LTextureText(buffer,textColor);
                 cont.h=texture->h;
                 cont.w=texture->w;
                 SDL_RenderSetViewport(renderer,&cont);
@@ -716,8 +835,10 @@ void renderMenu(Menu* menu){
 
             //render first player KALAH value
             textColor.b=textColor.g=textColor.r=0xff;
-            itoa(api->game->player[0]->board[KALAH],texture->src,10);
-            texture=LTextureText(texture->src,textColor);
+            char* buffer=itoa(api->game->player[0]->board[KALAH],holder,10);
+            
+            destroyTexture(texture); texture=NULL;
+            texture=LTextureText(buffer,textColor);
             cont.x=8*SCREEN_WIDTH/10+15;
             cont.y=(64-18)*SCREEN_HEIGHT/64;
             cont.h=texture->h;
@@ -728,15 +849,18 @@ void renderMenu(Menu* menu){
             //render second player KALAH value
             cont.x=5*SCREEN_WIDTH/40;
             cont.y=13*SCREEN_HEIGHT/64;
-            itoa(api->game->player[1]->board[KALAH],texture->src,10);
-            texture=LTextureText(texture->src,textColor);
+            buffer=itoa(api->game->player[1]->board[KALAH],holder,10);
+            
+            destroyTexture(texture); texture=NULL;
+            texture=LTextureText(buffer,textColor);
             cont.h=texture->h;
             cont.w=texture->w;
             SDL_RenderSetViewport(renderer,&cont);
             SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
-
+            destroyTexture(texture);
             break;
         }
+        
     }
     SDL_RenderSetViewport(renderer,default_container);
 }
@@ -859,7 +983,7 @@ bool init()
 		}
 
 		//Create window
-		window = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+		window = SDL_CreateWindow( "KALAH", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
 		if( window == NULL )
 		{
 			printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
@@ -902,18 +1026,7 @@ bool init()
     textInput="";
     api=NULL;
     q=NULL;
-    //loadAPI("game");
-    /*
-    strcpy(api->name,"a");
-    api->numb_pieces=4*12;
-    api->game=malloc(sizeof(stack));
-    api->game->numb_games=1;
-    api->game->prec=NULL;
-    api->game->player[0]=malloc(sizeof(Player));
-    api->game->player[1]=malloc(sizeof(Player));
-    strcpy(api->game->player[1]->name,"lol");
-    strcpy(api->game->player[0]->name,"lol2");
-    api->game->s=malloc(sizeof(state));*/
+    tmpAPI=NULL;
 
     Menu* menu = createMenu(FIRST_FRAME);
     
@@ -925,6 +1038,8 @@ bool init()
     default_container->h=SCREEN_HEIGHT;
     default_container->w=SCREEN_WIDTH;
     
+    render = true;
+
     return success;
 }
 
@@ -938,6 +1053,7 @@ void free_game(stack* game){
 }
 
 void freeAPI(){
+    if (api==NULL) return;
     free_game(api->game);
     api->game=NULL;
     free(api);
@@ -971,7 +1087,7 @@ void quit(){
 
 }
 char* deleteChar(char* str){
-    if (str=="") return str;
+    if (str=="") return "";
     int n=strlen(str);
     char* newstr= malloc(n*sizeof(char));
     for (int i=0; i<n-1; i++) newstr[i]=str[i];
@@ -1003,4 +1119,35 @@ void empty(){
     delete();
     empty();
 }
+
+
+//rendering pile pieces
+
+void renderPieces(SDL_Rect* container,int nombrePieces){
+    Texture* piece=malloc(sizeof(Texture));
+    piece->src="images/play/sphere.png";
+    piece->texture=loadTexture(piece->src);
+    srand(3);
+    SDL_Rect* cont = malloc(sizeof(SDL_Rect));
+    cont->h=17;
+    cont->w=17;
+    for (int i=0 ;i<nombrePieces; i++){
+        int x,y;
+        x=rand() % (7*container->w /16 );
+        y=rand() % (7*container->h /16 );
+        cont->x=container->x+3*container->w/16+x;
+        cont->y=container->y+3*container->h/16+y;
+        SDL_RenderSetViewport(renderer,cont);
+        SDL_RenderCopy(renderer,piece->texture,NULL,NULL);
+    }
+    free(cont);
+    destroyTexture(piece);
+}
+
+
+
+
+
+
+
 
