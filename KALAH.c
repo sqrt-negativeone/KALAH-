@@ -1,4 +1,4 @@
-
+#include <string.h>
 #include <stdio.h>
 #include "utils.h"
 
@@ -14,20 +14,28 @@ int main(int argc, char** argv){
 
         //main loop flag
         bool quit=false;
-        bool render=true;
         
         while (!quit){
-            
             //render the menu to display
             //SDL_RenderClear(renderer);
-            if (render) renderMenu(q->top); render=false;
+            if (render){
+                SDL_RenderClear(renderer);
+                renderMenu(q->top);
+            } render=false;
             //handel events based on the type of the menu
             switch(q->top->type){
                 // the menus with only buttons 
+                case MAIN_GAME:{
+                    if (api->game->s->is_all_empty){
+                        Menu* menu=createMenu(WINNER);
+                        insert(menu);
+                        render=true;
+                        break;
+                    }
+                }
                 case FIRST_FRAME:
                 case CHOOSE_NUMBER_OF_PIECES:
                 case HOME_MENU:
-                case MAIN_GAME:
                 case WINNER:{
                     while (SDL_PollEvent(&e)){
                         //if quit request
@@ -40,13 +48,19 @@ int main(int argc, char** argv){
                                 //if the mouse was inside the countainer of the button then activate it
                                 if (isMouseInsideContainer(q->top->buttons[i].container)){
                                     render=true;
-                                    printf("%d\n",q->next==NULL);
                                     handleClick(&(q->top->buttons[i]));
                                     break;
                                 }
                             }
                         }
                     }
+                    break;
+                }
+                case LOADING:{
+                    empty();
+                    Menu* menu=createMenu(MAIN_GAME);
+                    insert(menu);
+                    render=true;
                     break;
                 }
                 default :{ //Menus with input field
@@ -65,8 +79,10 @@ int main(int argc, char** argv){
                             if( e.key.keysym.sym == SDLK_BACKSPACE  )
                             {
                                 //lop off character
+                                if (strlen(textInput)==0) continue;
                                 render=true;
                                 textInput=deleteChar(textInput);
+                                
                             }
                             //Handle copy
                             else if( e.key.keysym.sym == SDLK_c && SDL_GetModState() & KMOD_CTRL )
