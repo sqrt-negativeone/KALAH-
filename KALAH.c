@@ -26,7 +26,7 @@ int main(int argc, char** argv){
             switch(q->top->type){
                 // the menus with only buttons 
                 case MAIN_GAME:{
-                    if (api->game->s->is_all_empty){
+                    if (api->game->s->is_all_empty){    
                         Menu* menu=createMenu(WINNER);
                         insert(menu);
                         render=true;
@@ -57,7 +57,8 @@ int main(int argc, char** argv){
                     break;
                 }
                 case LOADING:{
-                    empty();
+                    empty(); 
+                    saveAPI();
                     Menu* menu=createMenu(MAIN_GAME);
                     insert(menu);
                     render=true;
