@@ -9,13 +9,15 @@
 //------------------------------------------play-------------------------------------------------
 
 void play(int move){
+    //save the current API
     saveAPI();
     
+    //get the current player
     int player = api->game->s->player_turn;
+    //cancel play if it's on an empty pile
     if (api->game->player[player]->board[move]==0) return;
 
-    //saveAPI();
-
+    //push a new game to the stack
     stack* holder=api->game;
     api->game=malloc(sizeof(stack));
 
@@ -31,12 +33,13 @@ void play(int move){
 
     api->game->s->is_all_empty=api->game->s->is_last_move_at_empty=api->game->s->is_last_move_at_kalah=0;
     api->game->s->player_turn=api->game->prec->s->player_turn;
-
+    
     for (int i=0 ; i<7 ;i++){
         api->game->player[0]->board[i]= api->game->prec->player[0]->board[i];
         api->game->player[1]->board[i]= api->game->prec->player[1]->board[i];
     }
 
+    //play the turn
     int pieces = api->game->player[player]->board[move];
     api->game->player[player]->board[move]=0;
     
@@ -54,24 +57,28 @@ void play(int move){
         api->game->player[currPlayer]->board[move]++;
     }
     
+    //update the flag for the case if the last move at kalah
     if (move == KALAH) api->game->s->is_last_move_at_kalah=1;
     
+    //update the flag for the case if the last move was at an empty pile
     if (currPlayer==player && api->game->player[player]->board[move]==1 && move != KALAH) api->game->s->is_last_move_at_empty=1;
     
     int is_all_empty=1;
     
+    //update the next player turn
     if (api->game->s->is_last_move_at_kalah){
         api->game->s->player_turn=player;
     }
     else {
         api->game->s->player_turn=1-player;
     }
+    //handle the case if last move was at empty
     if (api->game->s->is_last_move_at_empty){
         api->game->player[player]->board[KALAH]+= 1 + api->game->player[1-player]->board[5-move];
         api->game->player[player]->board[move]=0;
         api->game->player[1-player]->board[5-move]=0;
     }
-
+    //check for end game 
     for (int i=0 ; i<6 && is_all_empty ; i++){
         if (api->game->player[api->game->s->player_turn]->board[i]!=0) is_all_empty=0;
     }
@@ -184,12 +191,13 @@ void loadAPI(char* name){
 
 
 //-------------------------------------handling mouse-------------------------------------------
+//check if mouse inside container 
 int isMouseInsideContainer(SDL_Rect* container){
     int x,y;
     SDL_GetMouseState(&x,&y);
-
     return ((container->x < x && x< (container->x+container->w)) && (container->y < y && y< (container->y+container->h)));
 }
+//handle the mouse clicks based on the type of the button the menu currently dispalyed
 void handleClick(Button* button){
     switch (button->t){
 
@@ -249,6 +257,7 @@ void handleClick(Button* button){
             switch (q->top->type){
                 case NEW_GAME_MENU :  {
                     if (textInput=="") break;
+                    //the creation of the new api is done in a temporary API so that the current API is not lost
                     if (tmpAPI==NULL){
                         tmpAPI=malloc (sizeof(API));
                         tmpAPI->game=malloc(sizeof(stack));
@@ -291,6 +300,11 @@ void handleClick(Button* button){
                     break;
                 }
                 case LOAD_GAME_MENU:{
+                    char dir[] = "saves\\";
+                    strcat(dir,textInput);
+                    FILE* file =fopen(dir,"r");
+                    if (file == NULL) break;
+                    fclose(file);
                     freeAPI(api);
                     loadAPI(textInput);
                     textInput="";
@@ -312,6 +326,11 @@ void handleClick(Button* button){
 
 //---------------------------------------handleing Menus-----------------------------------------
 
+//creating a menu based on thier types
+/*
+    create background
+    create buttons 
+*/
 Menu* createMenu(MenuType type){
     Menu* menu = malloc (sizeof(Menu));
     menu->type=type;
@@ -605,7 +624,14 @@ Menu* createMenu(MenuType type){
 }
 
 
+//render the menu based on the type
+/*
+    render background
+    render buttons
+    if the menu is with input field render the text
+    the render process is different for the case of the MAIN_GAME and WINNER menus as there are other elements to render but buttons
 
+*/
 void renderMenu(Menu* menu){
     SDL_RenderSetViewport(renderer,default_container);
     SDL_RenderCopy(renderer,menu->background->texture,NULL,NULL);
@@ -662,11 +688,11 @@ void renderMenu(Menu* menu){
             loadFont("fonts/goudysto.ttf",20);
             if (menu->type==LOAD_GAME_MENU) cont.y=5*SCREEN_HEIGHT/16;
             else cont.y=SCREEN_HEIGHT/2;
-            cont.x=SCREEN_WIDTH/3;
+            cont.x=SCREEN_WIDTH/2;
             texture=LTextureText(textInput,textColor);
-            
             cont.h=texture->h;
             cont.w=texture->w;
+            cont.x-=cont.w/2;
             SDL_RenderSetViewport(renderer,&cont);
             SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
             SDL_DestroyTexture(texture->texture);
@@ -697,7 +723,6 @@ void renderMenu(Menu* menu){
             
             cont.h=texture->h;
             cont.w=texture->w;
-
             SDL_RenderSetViewport(renderer,&cont);
             SDL_RenderCopy(renderer,texture->texture,NULL,NULL);
 
@@ -865,6 +890,7 @@ void renderMenu(Menu* menu){
     SDL_RenderSetViewport(renderer,default_container);
 }
 
+//function to free memory
 void destroyTexture(Texture* texture){
     SDL_DestroyTexture(texture->texture);
     free(texture->src);
@@ -882,6 +908,7 @@ void destroyMenu(Menu* menu){
     menu=NULL;
 }
 
+//what it does is clear from its name lol
 void loadFont(char* src,int size )
 {
 
@@ -893,7 +920,7 @@ void loadFont(char* src,int size )
     }
 }
 
-//TODO : fix the empty string case
+//load texture from text
 Texture* LTextureText( char* textureText, SDL_Color textColor )
 {
     
@@ -930,7 +957,7 @@ Texture* LTextureText( char* textureText, SDL_Color textColor )
     return texture;
 }
 
-
+//load texture from image in path
 SDL_Texture* loadTexture( char* path ){
     //The final texture
     SDL_Texture* newTexture = NULL;
@@ -959,7 +986,7 @@ SDL_Texture* loadTexture( char* path ){
     return newTexture;
 }
 
-
+//initialize the SDL and the global variables
 bool init()
 {
 	//Initialization flag
@@ -1043,7 +1070,7 @@ bool init()
     return success;
 }
 
-
+//free functions for quiting
 void free_game(stack* game){
     if (game==NULL) return;
     free_game(game->prec);
@@ -1086,6 +1113,8 @@ void quit(){
 	SDL_Quit();
 
 }
+
+//functions to manipulate the characters
 char* deleteChar(char* str){
     if (str=="") return "";
     int n=strlen(str);
@@ -1103,6 +1132,8 @@ char* addChar(char* str,char c){
     newstr[n+1]='\0';
     return newstr;
 }
+
+//manipulating the menus stack
 void insert(Menu *menu){
     MenuStack* newQ = malloc(sizeof(MenuStack));
     newQ->top=menu;
@@ -1143,11 +1174,5 @@ void renderPieces(SDL_Rect* container,int nombrePieces){
     free(cont);
     destroyTexture(piece);
 }
-
-
-
-
-
-
 
 
