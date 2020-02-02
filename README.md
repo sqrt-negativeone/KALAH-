@@ -1,7 +1,7 @@
 # KALAH-GAME
 KALAH also called MANCALA is a game played on a board of two rows, each consisting of six round pits that have a 
 large store at either end called kalah.  
-The object of the is to capture more seeds than one's opponent.
+The object of the game is to capture more seeds than one's opponent.
 
 Discover more about the rules of the game on [this file](https://github.com/moadfakhri/KALAH-/blob/master/rules.txt) .
 
