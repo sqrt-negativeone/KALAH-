@@ -3,7 +3,7 @@ KALAH also called MANCALA is a game played on a board of two rows, each consisti
 large store at either end called kalah.  
 The object of the is to capture more seeds than one's opponent.
 
-Discover more about the rules of the game on [this file](https://github.com/choub26/KALAH-GAME/blob/master/rules.txt) .
+Discover more about the rules of the game on [this file](https://github.com/moadfakhri/KALAH-/blob/master/rules.txt) .
 
 [Kawtar CHOUBARI](https://github.com/choub26) and I ( [Mouad FAKHRI](https://github.com/moadfakhri) ) have coded this game on C language with a graphic interface using SDL 2.0 .
 The interface is shown on French as it was a school project for ENSIAS (National School of Applied Sciences in Rabat, Morocco).
@@ -57,8 +57,8 @@ The different types of buttons used:
 
 
 ## :wrench:Tools
-- Visual Code Studio *(IDE)*
-- SDL 2.0 *(Graphic Interfaces)*
-- Adobe Photoshop *(Graphic Design)*
+
+![alt text](https://github.com/choub26/KALAH-GAME/blob/master/images/tools.png)
+
 
 
