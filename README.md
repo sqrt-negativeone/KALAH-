@@ -9,7 +9,7 @@ Discover more about the rules of the game on [this file](https://github.com/moad
 The interface is shown on French as it was a school project for ENSIAS (National School of Applied Sciences in Rabat, Morocco).
 
 
-## :camera: Interfaces
+# :camera: Interfaces
 
 When you open the game, this is the home interface where there is a Play button *(Jouer)* at the buttom of the window. 
 
@@ -45,7 +45,7 @@ Here is the winner interface after the end of the game.
 ![alt text](https://github.com/choub26/KALAH-GAME/blob/master/images/outputs/WINNER.PNG)
 
 
-## :iphone: Coding interfaces
+# :iphone: Coding interfaces
 
 We've organised each frame as a menu linked by buttons, here is the summary:
 
@@ -56,7 +56,7 @@ The different types of buttons used:
 ![alt text](https://github.com/choub26/KALAH-GAME/blob/master/images/outputs/22.PNG)
 
 
-## :wrench:Tools
+# :wrench:Tools
 
 ![alt text](https://github.com/choub26/KALAH-GAME/blob/master/images/tools.png)
 
