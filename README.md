@@ -27,7 +27,7 @@ An UNDO *(revenir à l'arrière)* and NEXT *(suivant)* buttons are placed at the
 ![alt text](https://github.com/choub26/KALAH-GAME/blob/master/images/outputs/player1.PNG)
 ![alt text](https://github.com/choub26/KALAH-GAME/blob/master/images/outputs/player2.PNG)
 
-And here is it, you can start playing with your friend.
+And here is it, you can start playing with your friend. The name of the player who's turn to play is written on red.
 
 ![alt text](https://github.com/choub26/KALAH-GAME/blob/master/images/outputs/board.PNG)
 
