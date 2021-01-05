@@ -5,10 +5,10 @@ OBJS = KALAH.c utils.h utils.c
 CC = gcc
 
 #INCLUDE_PATHS specifies the additional include paths we'll need
-INCLUDE_PATHS = -IC:\mingw_dev_lib\include\SDL2
+INCLUDE_PATHS = -I$(shell pwd)\includes
 
 #LIBRARY_PATHS specifies the additional library paths we'll need
-LIBRARY_PATHS = -LC:\mingw_dev_lib\lib
+LIBRARY_PATHS = -L$(shell pwd)\libs
 
 #COMPILER_FLAGS specifies the additional compilation options we're using
 # -w suppresses all warnings
